@@ -1,94 +1,88 @@
-import simpy  # For Simulation
-import pandas as pd
-import numpy as np
+import simpy  # FOR SIMULATION
+import pandas as pd # TO PROCESS DATA
 
-# Insert Read File Function Here and pass into the variable
-memList = pd.read_csv('MemoryList.txt', skiprows = 1, header = None, names =['Size'], delimiter=' ')  # Read the file in dataframe
-jobList = pd.read_csv('Joblist.txt', skiprows = 1, header = None, names =['JobNumber', 'ArrivalTime', 'ProcessingTime', 'JobSize'],  delimiter=' ')
+# READ FILE FUNCTION
+# READ INTO DATAFRAME FORMAT
+memList = pd.read_csv('MemoryList.txt', skiprows=1, header=None, names=['Size'], delimiter=' ')
+jobList = pd.read_csv('Joblist.txt', skiprows=1, header=None, names=['JobNumber', 'ArrivalTime', 'ProcessingTime',
+                                                                     'JobSize'], delimiter=' ')
 
-
-# Sample File
-# Output
-
+# GET NUMBER OF MEMORY BLOCK
 of = open('MemoryList.txt')
-# In MemoryList.txt store here
-# Store variable
-
-CAPACITY = int(of.readline())# first line
+CAPACITY = int(of.readline())
 of.close()
 
+# LIST OF MEMORY SIZE
 SIZE = memList['Size'].tolist()
-print(SIZE)
 
-# In JobList.txt store here
-# Store variable
+# JOBS VARIABLES
 PROCESSING_TIME = jobList['ProcessingTime'].tolist()
 ARRIVAL_TIME = jobList['ArrivalTime'].tolist()
 JOB_SIZE = jobList['JobSize'].tolist()
 
+# GET TOTAL NUMBER OF JOBS
 of = open('Joblist.txt')
 TOTAL_JOBS = int(of.readline())
 of.close()
 
-# Class for jobs
+
+# CLASS DECLARATION
 class Jobs:
-    # initialize objects for class
+    # INITIALIZE OBJECTS
     def __init__(self, arrival_time, processing_time, job_size):
         self.arrival_time = arrival_time
         self.processing_time = processing_time
         self.job_size = job_size
 
 
-# Run Simulation here
+# MAIN PROGRAM
 def start_simulation(env, resources_memory):
-    # Read File here
 
+    # LOOP THROUGH NUMBER OF JOBS
     for i in range(TOTAL_JOBS):
 
-        # initialize class and put in list
+        # INITIALIZE CLASS AND ASSIGN VARIABLES
         job = Jobs(arrival_time=ARRIVAL_TIME[i], processing_time=PROCESSING_TIME[i], job_size=JOB_SIZE[i])
 
-        # To calculate the waiting time for next job
+        # CALCULATE WAITING TIME FOR EACH JOB
         if i == 0:
             a_time = job.arrival_time
         else:
             a_time = job.arrival_time - ARRIVAL_TIME[i-1]
 
-        # wait for next arrival
+        # WAIT FOR NEXT JOB TO ARRIVE
         yield env.timeout(a_time)
+        # ----TEST PRINT----
         print('job has arrived at ', env.now, ' with size ', job.job_size, ' processing_time ', job.processing_time)
-        # pass to run job to start simulation
+        # RUN JOB
         env.process(run_job(env, resources_memory, job))
-        # press enter to execute next event
-     #   input()
+        # PRESS ENTER TO EXECUTE NEXT EVENT
+        input()
 
 
+# ----RUN JOB FUNCTION----
 def run_job(env, resources_memory, job):
-    # get resources that is match
+    # FIND RESOURCES THAT SATISFY THE REQUIREMENTS
     process_job = yield resources_memory.get(lambda process_job: process_job >= job.job_size)
+    # ----TEST PRINT----
     print(job.job_size, ' is processing... at time ', env.now)
-    # time needed to complete job
+    # TIME NEEDED TO COMPLETE JOB
     yield env.timeout(job.processing_time)
-    # job completed
+    # JOB COMPLETE
     yield resources_memory.put(process_job)
     print("process finished.. for ", job.job_size, " at ", env.now)
 
-# Start simulation
+
+# START SIM
 env = simpy.Environment()
 
-# Resources for the simulation
+# INITIALIZE RESOURCES
 resources_memory = simpy.FilterStore(env, capacity=CAPACITY)
-# give value for each memory block available
+# GIVE VALUE FOR EACH MEMORY BLOCK
 resources_memory.items = SIZE
 
 env.process(start_simulation(env, resources_memory))
 env.run()
 
-# Read sample text file ?
-# pandas -> list
-# output file ?
-
-# Gui
-# box -> cashier
 
 
